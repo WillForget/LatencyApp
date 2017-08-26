@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+
+import subprocess, signal
+import os, sys, time
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('AppIndicator3', '0.1')
+from gi.repository import Gtk, AppIndicator3, GObject
+from threading import Thread
+
+P = []
+U = []
+A = 0
+Path = os.path.realpath('/home/nick/Desktop/Python/LatencyApp/Icons')
+
+#################  Running Best Latency Average  #################################
+
+while True:
+            
+            p = open ('/home/nick/Desktop/Python/LatencyApp/Memory.txt', 'a+')     
+            subprocess.call(["ping -c 1 4.2.2.2 | tail -1| awk '{print $4}' | cut -d '/' -f2 | cut -d '.' -f1"],stdout = p, stderr = None, shell=True)
+            p.close()
+            with open (r'/home/nick/Desktop/Python/LatencyApp/Memory.txt') as H:
+                        for line in H:
+                                    fields = line.split()
+                                    rowdata = map (float, fields)
+                                    #print (rowdata)
+                                    P.extend (rowdata)
+            A = round (float("{:.2f}".format(sum(P) / len(P))))
+            if len(P) > 100:
+                        os.remove ('/home/nick/Desktop/Python/LatencyApp/Memory.txt')
+                        p = open('/home/nick/Desktop/Python/LatencyApp/Memory.txt', 'w')
+                        p.write (A)
+                        p.close
+              
+################ Creates applet and conditional display  #########################
+                        
+            class Applet():
+                        def __init__(self):
+                                    self.ID = 'PingKing'
+                                    iconpath = Path+"/00.png"
+                                    self.indicator = AppIndicator3.Indicator.new(
+                                                self.ID, iconpath,
+                                                AppIndicator3.IndicatorCategory.OTHER)
+                                    self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)       
+                                    self.indicator.set_menu(self.Menu())
+                                    self.indicator.set_icon_full(iconpath, self.ID)
+                                    self.update = Thread(target=self.Update)
+                                    self.update.setDaemon(True)                                 
+                                    self.update.start()
+                                    
+                        def Menu (self):
+                                    Menu = Gtk.Menu()
+                                    item_quit = Gtk.MenuItem('Quit')
+                                    item_quit.connect('activate', self.stop)
+                                    Menu.append(item_quit)
+                                    Menu.show_all()
+                                    return Menu                                         
+                                    
+                        def stop (self, source):
+                                    sys.exit()
+                                    
+                        def Update(self):
+                                    while True:
+                                                
+                                                a = subprocess.Popen(["ping -c 1 4.2.2.2 | tail -1| awk '{print $4}' | cut -d '/' -f 2"],stdout = subprocess.PIPE, shell=True)
+                                                a = a.communicate()[0]
+                                                if a == b'' or a == b'\n':
+                                                            GObject.idle_add(
+                                                            self.indicator.set_icon,
+                                                            Path+"/-R.png",
+                                                            priority=GObject.PRIORITY_DEFAULT
+                                                            )
+                                                            continue
+                                                else: 
+                                                            a = round (float(a.decode("utf8").strip()))
+                                                            #print (a)
+                                    
+                                                url = open ('/home/nick/Desktop/Python/LatencyApp/URL.txt', 'w+')
+                                                subprocess.call(["ss  -t4 state time-wait | tail -1 |  awk '{print $4}' | cut -d '/' -f 2 | cut -d ':' -f 1"], stdout =url, shell=True)
+                                                        
+                                                with open('/home/nick/Desktop/Python/LatencyApp/URL.txt') as p:
+                                                            u = str(p.read().splitlines()).strip('[]')
+                                                            if  u == "'Address'" or u == "'127.0.0.1'" and a <= 2*A:
+                                                                        GObject.idle_add(
+                                                                                    self.indicator.set_icon,
+                                                                                    Path+"/0G.png",
+                                                                                    priority=GObject.PRIORITY_DEFAULT
+                                                                                    )
+                                                                        continue
+                                                            
+                                                            if  u == "'Address'" or u == "'127.0.0.1'" and a >= 2*A and a <= 10*A:
+                                                                        GObject.idle_add(
+                                                                                    self.indicator.set_icon,
+                                                                                    Path+"/0Y.png",
+                                                                                    priority=GObject.PRIORITY_DEFAULT
+                                                                                    )                         
+                                                                        continue
+                                                                        
+                                                            else:
+                                                                        U.append (u)
+                                                
+                                                u = str(U[-1]).strip("''")
+                                                c = subprocess.Popen(["ping -c 1 %s | tail -1| awk '{print $4}' | cut -d '/' -f 2" % u] ,stdout = subprocess.PIPE, shell=True) 
+                                                c = c.communicate()[0]
+                                                
+                                                if c == b'' or c == b'\n' and a <= 2*A:
+                                                            GObject.idle_add(
+                                                                        self.indicator.set_icon,
+                                                                        Path+"/0G.png",
+                                                                        priority=GObject.PRIORITY_DEFAULT
+                                                                        )
+                                                            continue
+                                                
+                                                if c == b'' or c == b'\n' and a > 2*A and a < 10*A:
+                                                            GObject.idle_add(
+                                                                        self.indicator.set_icon,
+                                                                        Path+"/0Y.png",
+                                                                        priority=GObject.PRIORITY_DEFAULT
+                                                                        )
+                                                            continue
+                                                
+                                                if c == b'' or c == b'\n' and a > 10*A and a < 200*A:
+                                                            GObject.idle_add(
+                                                            self.indicator.set_icon,
+                                                            Path+"/0O.png",
+                                                            priority=GObject.PRIORITY_DEFAULT
+                                                                        )
+                                                            continue                                                
+                                    
+                                    
+                                                else:
+                                                            c = round (float(c.decode("utf8").strip()))
+
+######################################## Gauge Color Conditions ##########################################################
+
+                                                if a <= 2*A and c <= 5*a:
+                                                            GObject.idle_add(
+                                                                        self.indicator.set_icon,
+                                                                        Path+"/GG.png",
+                                                                        priority=GObject.PRIORITY_DEFAULT
+                                                                        )
+                                                            
+                                                elif a < 2*A and c > 5*a and c < 25*a:
+                                                            GObject.idle_add(
+                                                                        self.indicator.set_icon,
+                                                                        Path+"/YG.png",
+                                                                        priority=GObject.PRIORITY_DEFAULT
+                                                                        )
+                                                  
+                                                elif a <= 2*A and c > 25*a and c < 200*a:
+                                                            GObject.idle_add(
+                                                                        self.indicator.set_icon,
+                                                                        Path+"/OG.png",
+                                                                        priority=GObject.PRIORITY_DEFAULT
+                                                                        )
+                                                
+                                                elif a <= 2*A and c > 400*a:
+                                                            GObject.idle_add(
+                                                                        self.indicator.set_icon,
+                                                                        Path+"/RG.png",
+                                                                        priority=GObject.PRIORITY_DEFAULT
+                                                                        )                                                
+                                                
+                                                
+                                                elif a > 2*A and a < 10*A and c <= 5*a:
+                                                            GObject.idle_add(
+                                                                        self.indicator.set_icon,
+                                                                        Path+"/GY.png",
+                                                                        priority=GObject.PRIORITY_DEFAULT
+                                                                        )
+                                                            
+                                                elif a > 2*A and a < 10*A and c > a and c < 25*a:
+                                                            GObject.idle_add(
+                                                                        self.indicator.set_icon,
+                                                                        Path+"/YY.png",
+                                                                        priority=GObject.PRIORITY_DEFAULT
+                                                                        )                                              
+                                                  
+                                                elif a > 10*A and a < 200*A and c > a and c < 25*a:
+                                                            GObject.idle_add(
+                                                                        self.indicator.set_icon,
+                                                                        Path+"/YO.png",
+                                                                        priority=GObject.PRIORITY_DEFAULT
+                                                                        )                                                
+                                                
+                                                elif a > 10*A and a < 200*A and c > 25*a and c < 200*a:
+                                                            GObject.idle_add(
+                                                                        self.indicator.set_icon,
+                                                                        Path+"/OO.png",
+                                                                        priority=GObject.PRIORITY_DEFAULT
+                                                                        )                                                
+                  
+                  
+            Applet()
+            GObject.threads_init()
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
+            Gtk.main()

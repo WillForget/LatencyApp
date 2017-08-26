@@ -1,0 +1,17 @@
+
+++++++++++++++++++++++++++++++++ Ping or Ping-Pong, or PingKing +++++++++++++++++++++++++++++++++++++
+
+
+Built on Ubuntu 16.04 with Wing IDE 101 5.1.
+
+Simple python (3*) code that tries to differentiate between general connectivity and connectivity to a particular website. To achieve that, I ping 4.2.2.2, obtain time-wait with the ss command and compare the two latencies. Couldn't find a way, or any help on StackExchange, to ping the website requested. As far as the reference, I store and use the running average of every session.
+
+The gauge on the right is the general tatency, the one on the left the specific latency. Green indicates a deviation of less than 10% and yellow more than that, up to 75%. After that, it turns to orange. When there is no connectivity (e.g. computer disconnected, ISP down) a red gauge pops up. Gray means no traffic.
+
+I am a beginner so I'm sure the code is plenty inelegant. At the very least.
+
+Locations and paths in the code, including python libraries and such, are the ones I used on my computer so, short of an installation packet, which I might try to build later, the program will not work "out of the box".
+
+I made this program because I often wondered what was the reason for a slow connection, ISP or the site itself.
+
+No license or anything.
